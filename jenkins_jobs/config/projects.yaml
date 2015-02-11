@@ -1,0 +1,18 @@
+- project:
+    name: sandbox
+    github-org: openstack-dev
+    node: master
+    vendor: myvendor
+
+    jobs:
+        - noop-check-communication
+        - dsvm-tempest-full-congress-pg:
+            node: 'devstack_slave || devstack-precise-check || d-p-c'
+        - dsvm-tempest-full-congress:
+            node: 'devstack_slave || devstack-precise-check || d-p-c'
+        - dsvm-tempest-full-congress-pg-nodepool:
+            node: 'devstack-trusty-dib'
+        - dsvm-tempest-full-congress-nodepool:
+            node: 'devstack-trusty-dib'
+        - dsvm-tempest-full:
+            node: 'devstack_slave || devstack-precise-check || d-p-c || devstack-trusty-dib'

@@ -1,0 +1,71 @@
+- job-template:
+    name: 'dsvm-tempest-full-congress-nodepool'
+    node: '{node}'
+
+    wrappers:
+      - timeout:
+          timeout: 185  # Timeout in *minutes*
+          fail: true  # A job run that exceeds the timeout will cause a failure
+      - timestamps
+
+    builders:
+      - net-info
+      - devstack-checkout
+      - shell: |
+          #!/bin/bash -xe
+          function pre_test_hook {{
+            echo $ZUUL_PROJECT
+            echo $ZUUL_URL
+            # If commit is to congress pull these changes in and apply
+            # devstack files.
+            export SERVICE_TIMEOUT=120
+            if [[ "$ZUUL_PROJECT" == "stackforge/congress" ]]; then
+                git clone $ZUUL_URL/$ZUUL_PROJECT
+                cd congress
+                git fetch $ZUUL_URL/$ZUUL_PROJECT $ZUUL_REF
+                git checkout FETCH_HEAD
+                git clone https://github.com/stackforge/python-congressclient
+                mv python-congressclient /opt/stack/new
+            else
+                git clone http://github.com/stackforge/congress
+                cd congress
+            fi
+            cp contrib/devstack/lib/congress /opt/stack/new/devstack/lib
+            cp contrib/devstack/extras.d/70-congress.sh /opt/stack/new/devstack/extras.d
+            cp -r contrib/tempest /opt/stack/new
+
+            echo python-congressclient | tee -a /opt/stack/new/tempest/requirements.txt
+            cd ..
+            mv congress /opt/stack/new
+          }}
+          if [ -z $ZUUL_PROJECT ]; then
+              export ZUUL_PROJECT=stackforge/congress
+          fi
+          if [ -z $ZUUL_BRANCH ]; then
+              export ZUUL_BRANCH=master
+          fi
+          export DEVSTACK_GATE_TEMPEST_REGEX="tempest.scenario.test_congress_* tempest.scenario.congress_datasources.*"
+          export KEEP_LOCALRC=1
+          export -f pre_test_hook
+          export SERVICE_TIMEOUT=120
+          export PYTHONUNBUFFERED=true
+          export DEVSTACK_GATE_TIMEOUT=120
+          export DEVSTACK_GATE_TEMPEST=1
+          export DEVSTACK_GATE_NEUTRON=1
+          #export DEVSTACK_GATE_TEMPEST_ALLOW_TENANT_ISOLATION=1
+          export DEVSTACK_GATE_TEMPEST_DISABLE_TENANT_ISOLATION=1
+          export DEVSTACK_GATE_CONFIGDRIVE=0
+          export RE_EXEC=true
+          export API_WORKERS=1
+          export SERVICE_TIMEOUT=120
+          export PROJECTS="stackforge/congress $PROJECTS"
+          cp devstack-gate/devstack-vm-gate-wrap.sh ./safe-devstack-vm-gate-wrap.sh
+          export MY_ENABLED_SERVICES=c-api,c-bak,c-sch,c-vol,ceilometer-acentral,ceilometer-acompute,ceilometer-alarm-evaluator,ceilometer-alarm-notifier,ceilometer-anotification,ceilometer-api,ceilometer-collector,cinder,dstat,g-api,g-reg,h-api,h-api-cfn,h-api-cw,h-eng,heat,horizon,key,n-api,n-cond,n-cpu,n-crt,n-obj,n-sch,,q-agt,q-dhcp,q-l3,q-meta,q-metering,q-svc,quantum,rabbit,s-account,s-container,s-object,s-proxy,sahara,tempest,tr-api,tr-cond,tr-tmgr,trove,congress
+
+          export ENABLED_SERVICES=c-api,c-bak,c-sch,c-vol,ceilometer-acentral,ceilometer-acompute,ceilometer-alarm-evaluator,ceilometer-alarm-notifier,ceilometer-anotification,ceilometer-api,ceilometer-collector,cinder,dstat,g-api,g-reg,h-api,h-api-cfn,h-api-cw,h-eng,heat,horizon,key,n-api,n-cond,n-cpu,n-crt,n-obj,n-sch,,q-agt,q-dhcp,q-l3,q-meta,q-metering,q-svc,quantum,rabbit,s-account,s-container,s-object,s-proxy,sahara,tempest,tr-api,tr-cond,tr-tmgr,trove,congress
+          ./safe-devstack-vm-gate-wrap.sh
+      - link-logs  # In macros.yaml from os-ext-testing
+
+    publishers:
+      - devstack-logs
+      - console-log
