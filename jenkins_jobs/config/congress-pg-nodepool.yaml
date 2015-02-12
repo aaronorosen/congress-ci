@@ -27,10 +27,19 @@
                 git checkout FETCH_HEAD
                 git clone https://github.com/stackforge/python-congressclient
                 mv python-congressclient /opt/stack/new
+                cd ..
+            elif [[ "$ZUUL_PROJECT" == "stackforge/python-congressclient" ]]; then
+                git clone $ZUUL_URL/$ZUUL_PROJECT
+                cd python-congressclient
+                git fetch $ZUUL_URL/$ZUUL_PROJECT $ZUUL_REF
+                git checkout FETCH_HEAD
+                cd ..
+                mv python-congressclient /opt/stack/new
+                git clone http://github.com/stackforge/congress
             else
                 git clone http://github.com/stackforge/congress
-                cd congress
             fi
+            cd congress
             cp contrib/devstack/lib/congress /opt/stack/new/devstack/lib
             cp contrib/devstack/extras.d/70-congress.sh /opt/stack/new/devstack/extras.d
             cp -r contrib/tempest /opt/stack/new
