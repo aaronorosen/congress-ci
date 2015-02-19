@@ -37,6 +37,8 @@
                 mv python-congressclient /opt/stack/new
                 git clone http://github.com/stackforge/congress
             else
+                git clone https://github.com/stackforge/python-congressclient
+                mv python-congressclient /opt/stack/new
                 git clone http://github.com/stackforge/congress
             fi
             cd congress
